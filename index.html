@@ -38,7 +38,7 @@ h1{font-size:24px;margin:0 0 4px;letter-spacing:-.015em}
 .mapwrap{position:relative;background:#fbfdfe;border:1px solid var(--line);border-radius:16px;overflow:hidden}
 #map{display:block;width:100%;height:640px;background:#eef3f6}
 .basebar{position:absolute;right:12px;top:12px;z-index:500;display:flex;gap:6px}
-.mapbar{z-index:500!important;left:58px!important}
+.mapbar{z-index:500!important;left:58px!important;right:330px}
 .wpanel.min .wbody{display:none}
 .wpanel .wt{background:none;border:0;padding:0;font-weight:700;font-size:13px;color:var(--ink)}
 .lflow{animation:flow 1.4s linear infinite}
@@ -325,7 +325,7 @@ function initMap(){
  const m=L.map('map',{zoomSnap:.25,zoomDelta:.5,wheelPxPerZoomLevel:110,minZoom:5,maxZoom:17,maxBounds:[[18.5,69],[34,94]],maxBoundsViscosity:.9,attributionControl:true});MAP.lm=m;
  m.attributionControl.setPrefix(false);
  ['dist','riv','bad','stn'].forEach((p,i)=>{m.createPane(p);m.getPane(p).style.zIndex=380+i*20});
- MAP.L.map=L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',{subdomains:'abcd',maxZoom:19,attribution:'© OpenStreetMap contributors © CARTO'});
+ MAP.L.map=L.layerGroup([L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,maxNativeZoom:16,attribution:'Basemap © Esri, HERE, Garmin, OpenStreetMap contributors'}),L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,maxNativeZoom:16,pane:'shadowPane'})]);
  MAP.L.sat=L.layerGroup([L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,attribution:'Imagery © Esri, Maxar, Earthstar Geographics'}),L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,opacity:.85})]);
  MAP.L.map.addTo(m);
  // states
@@ -376,7 +376,7 @@ function setLayer(k){MAP.layers[k]=!MAP.layers[k];const m=MAP.lm;const map={st:'
  if(k==='dist')onZoom();
  document.querySelectorAll('.chipb[data-l]').forEach(b=>b.classList.toggle('on',!!MAP.layers[b.dataset.l]))}
 function setBase(b){const m=MAP.lm;MAP.base=b;if(b==='sat'){m.removeLayer(MAP.L.map);MAP.L.sat.addTo(m)}else{m.removeLayer(MAP.L.sat);MAP.L.map.addTo(m)}
- MAP.L.sat.eachLayer(l=>l.bringToBack&&l.bringToBack());MAP.L.map.bringToBack();if(MAP.L.water)MAP.L.water.bringToFront();
+ MAP.L.sat.eachLayer(l=>l.bringToBack&&l.bringToBack());MAP.L.map.eachLayer(l=>l.options.pane!=='shadowPane'&&l.bringToBack());if(MAP.L.water)MAP.L.water.bringToFront();
  document.querySelectorAll('.chipb[data-b]').forEach(x=>x.classList.toggle('on',x.dataset.b===b))}
 function setWater(w){const m=MAP.lm;if(w)$('#wpanel').classList.remove('min');if(MAP.L.water){m.removeLayer(MAP.L.water);MAP.L.water=null}MAP.water=w;
  if(w){MAP.L.water=L.tileLayer(`https://storage.googleapis.com/global-surface-water/tiles2021/${w}/{z}/{x}/{y}.png`,{maxNativeZoom:13,maxZoom:17,opacity:.9,zIndex:5,attribution:'Water history: EC JRC / Google'}).addTo(m)}
