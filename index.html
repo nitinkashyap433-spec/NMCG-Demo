@@ -59,7 +59,8 @@ h1{font-size:24px;margin:0 0 4px;letter-spacing:-.015em}
 .chipb{background:#fff;border:1px solid var(--line);border-radius:18px;padding:5px 11px;font-size:12px;font-weight:600;color:var(--ink);display:inline-flex;align-items:center;gap:6px}
 .chipb.on{background:var(--sky);border-color:#b9d7ee;color:var(--blue2)}
 .chipb i{width:9px;height:9px;border-radius:50%;display:inline-block}
-.mapbox{position:relative}
+.mapbox{position:relative;isolation:isolate;z-index:0}
+.pill{white-space:nowrap}
 .legend{position:absolute;left:12px;bottom:26px;z-index:500;background:rgba(255,255,255,.94);border:1px solid var(--line);border-radius:12px;padding:8px 11px;font-size:11.5px;display:grid;gap:4px;z-index:2}
 .legend span{display:flex;align-items:center;gap:7px}
 .legend i{display:inline-block;width:18px;height:4px;border-radius:2px}
@@ -113,7 +114,7 @@ tr:last-child td{border-bottom:0}
 .bar{height:9px;border-radius:5px;background:#eef2f4;overflow:hidden;min-width:80px}
 .bar i{display:block;height:100%;border-radius:5px}
 .src{font-size:11.5px;color:var(--mut);margin-top:8px}
-.modal{position:fixed;inset:0;background:rgba(16,32,42,.45);display:none;align-items:center;justify-content:center;z-index:60;padding:16px}
+.modal{position:fixed;inset:0;background:rgba(16,32,42,.45);display:none;align-items:center;justify-content:center;z-index:2000;padding:16px}
 .modal.on{display:flex}
 .modal .box{background:#fff;border-radius:16px;max-width:720px;width:100%;padding:20px;max-height:90vh;overflow:auto}
 .modal textarea{width:100%;height:320px;font:13px/1.5 ui-monospace,Consolas,monospace;border:1px solid var(--line);border-radius:10px;padding:10px}
@@ -139,6 +140,10 @@ tr:last-child td{border-bottom:0}
 .eic{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;font-size:19px;font-weight:700}
 @media (max-width:1100px){.entries{grid-template-columns:1fr 1fr}}
 @media (max-width:800px){.entries{grid-template-columns:1fr}.herot{font-size:30px}.herologo{height:70px}.heros{font-size:15.5px}.hero{min-height:0}}
+
+.urm div{width:14px;height:14px;border-radius:4px;background:#fff;border:2.5px solid #6b3fa0;box-shadow:0 1px 3px rgba(0,0,0,.3);transform:rotate(45deg)}
+.urmpg{display:grid;grid-template-columns:repeat(5,1fr);gap:14px}
+@media (max-width:1100px){.urmpg{grid-template-columns:1fr 1fr}}
 #camdock{max-width:1440px;margin:0 auto;padding:0 20px 24px}
 #toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:#10202a;color:#fff;border-radius:10px;padding:10px 16px;font-size:13.5px;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90vw;text-align:center;z-index:70}
 #toast.show{opacity:1}
@@ -154,7 +159,7 @@ tr:last-child td{border-bottom:0}
  <span class="clock" id="clock"></span>
 </div></div>
 <main id="app"></main>
-<section id="camdock" style="display:none"><div class="card-h" style="margin-bottom:0"><h2 style="font-size:18px">Live camera at the outfall</h2><span class="hint">A phone can act as the camera for this demo. In a full system, these would be fixed cameras at major drain outfalls and STP outlets.</span></div><div id="camslot"></div></section>
+<section id="camdock" style="display:none"><div class="card-h" style="margin-bottom:0"><h2 style="font-size:18px">Live camera at the effluent outlet, checked against the online sensor</h2><span class="hint">A phone acts as the camera for this demo. In a full system: fixed cameras at CETP, STP and industry outlets, read alongside their online effluent sensors.</span></div><div id="camslot"></div></section>
 <div id="toast"></div>
 <div class="foot">Concept demonstration prepared for discussion. Not an official NMCG system. River courses and state outlines are approximate and not to scale. All station readings, plants, drains, flows and statuses are illustrative.</div>
 <div class="tip" id="tip"></div>
@@ -314,7 +319,7 @@ const WP={};Object.entries(RIVWP).forEach(([k,v])=>WP[k]=v);
 function stLL(rid,fi){const r=WP[rid];const i=Math.min(Math.floor(fi),r.length-2),f=fi-i;return[r[i][0]+(r[i+1][0]-r[i][0])*f,r[i][1]+(r[i+1][1]-r[i][1])*f]}
 const SEG=6;
 function subPath(rid,a,b){const p=G2.rivers[rid];return p.slice(Math.round(a*SEG),Math.round(b*SEG)+1)}
-let MAP={sel:null,layers:{st:true,bad:true,gw:false,flow:true,dist:true},base:'map',water:null,lm:null,L:{}};
+let MAP={sel:null,layers:{st:true,bad:true,gw:false,flow:true,dist:true,urmp:true},base:'map',water:null,lm:null,L:{}};
 const BASIN_BOUNDS=[[21.6,74.2],[31.2,89.2]];
 function stationBOD(s){if(Array.isArray(s[3])){const S=STRETCHES[s[3][0]];const a=S.assets.find(x=>x.id===s[3][1]);const lv=lastVal(S,a,RH-1);return{b:lv.v?lv.v.B:null,off:!lv.v||lv.t<RH-1,flat:a.health==='flat',S,a}}return{b:s[4]==='off'?null:s[3],off:s[4]==='off'}}
 function riverStatus(rid){const sts=BST.filter(s=>s[0]===rid).map(stationBOD);const bs=sts.map(s=>s.b).filter(b=>b!=null);const w=Math.max(...bs,0);return{n:sts.length,w,off:sts.filter(s=>s.off).length,cls:PCL(bs.length?w:null)}}
@@ -328,6 +333,7 @@ function basinMapHTML(){return `<div class="mapwrap"><div class="mapbox">
    <button class="chipb on" data-l="flow" onclick="setLayer('flow')"><i style="background:#1f74b8"></i>Flow direction</button>
    <button class="chipb on" data-l="st" onclick="setLayer('st')"><i style="background:#2f8f5b"></i>Stations</button>
    <button class="chipb on" data-l="bad" onclick="setLayer('bad')"><i style="background:#d7263d"></i>Problem stretches</button>
+   <button class="chipb on" data-l="urmp" onclick="setLayer('urmp')"><i style="background:#fff;border:2px solid #6b3fa0;border-radius:3px"></i>URMP cities</button>
    <button class="chipb on" data-l="dist" onclick="setLayer('dist')"><i style="background:#0a6fb8"></i>Districts</button>
    <button class="chipb" data-l="gw" onclick="setLayer('gw')"><i style="background:#a06e28"></i>Groundwater stress</button>
   </div>
@@ -344,6 +350,7 @@ function basinMapHTML(){return `<div class="mapwrap"><div class="mapbox">
    <span><i class="dot" style="background:#e69500"></i>Above criterion (3–6)</span>
    <span><i class="dot" style="background:#d7263d"></i>Well above (&gt;6)</span>
    <span><i class="dot" style="background:#fff;border:1.5px solid #8f9ca5"></i>No recent data</span>
+   <span><i style="width:10px;height:10px;background:#fff;border:2px solid #6b3fa0;transform:rotate(45deg);border-radius:2px"></i>URMP city (Phase I)</span>
    <span class="dl"><i style="background:rgba(10,111,184,.35);height:10px"></i>Main-stem district</span>
    <span class="dl"><i style="background:rgba(85,169,222,.25);height:10px"></i>Tributary district</span>
   </div></div>
@@ -383,6 +390,7 @@ function initMap(){
   mk.bindTooltip(`<b>${esc(st[2])}</b> · ${RIV[st[0]].label}<br>${b.off?'No recent data':`BOD ${b.b.toFixed(1)} mg/L · ${PCL(b.b)[1]}`}${b.flat?'<br>DO reading stuck. Sensor check needed':''}<br>Click to open this stretch`);
   mk.on('click',e=>{L.DomEvent.stop(e);openStation(i)});g.addLayer(mk);
   if(b.flat)g.addLayer(L.circleMarker(ll,{pane:'stn',radius:10,color:'#e69500',weight:2,dashArray:'3 3',fill:false,interactive:false}));return g})).addTo(m);
+ MAP.L.urmp=L.layerGroup(URMP.map(u=>L.marker([u[1],u[2]],{pane:'stn',icon:L.divIcon({className:'urm',html:'<div></div>',iconSize:[14,14],iconAnchor:[7,7]})}).bindTooltip(`<b>${u[0]}</b>, ${u[3]}<br>URMP city · Phase I<br>Click for its 10-point action tracker`).on('click',e=>{L.DomEvent.stop(e);openUrmp(u[0])}))).addTo(m);
  MAP.L.gw=L.layerGroup([[28.85,77.62,'Meerut–Ghaziabad'],[26.0,80.0,'Kanpur–Jhansi belt'],[25.35,82.75,'Varanasi–Bhadohi']].map(([la,lo,n])=>L.circle([la,lo],{radius:38000,color:'#a06e28',weight:1.5,dashArray:'5 4',fillColor:'#a06e28',fillOpacity:.14}).bindTooltip(`<b>${n}</b><br>Groundwater stress cluster (illustrative)`,{sticky:true})));
  m.fitBounds(BASIN_BOUNDS,{animate:false});
  m.on('zoomend',onZoom);m.on('moveend',updCrumbFromMap);onZoom();
@@ -400,7 +408,7 @@ function pip(pt,ring){let c=false;for(let i=0,j=ring.length-1;i<ring.length;j=i+
 function updCrumbFromMap(){const m=MAP.lm;if(!m||SV.id)return;const c=m.getCenter(),z=m.getZoom();let st=null,ds=null;
  if(z>=7){for(const d of G2.districts){if(d.r.some(r=>pip([c.lat,c.lng],r))){ds=d;break}}}
  MAP.place=ds?{s:ds.s,d:ds.n,c:ds.c}:null;renderCrumb()}
-function setLayer(k){MAP.layers[k]=!MAP.layers[k];const m=MAP.lm;const map={st:'st',bad:'bad',gw:'gw'};
+function setLayer(k){MAP.layers[k]=!MAP.layers[k];const m=MAP.lm;const map={st:'st',bad:'bad',gw:'gw',urmp:'urmp'};
  if(map[k]){const L1=MAP.L[map[k]];MAP.layers[k]?L1.addTo(m):m.removeLayer(L1)}
  if(k==='flow'){if(MAP.layers.flow&&m.getZoom()<10){MAP.L.flow.addTo(m);MAP.L.arw.addTo(m)}else{m.removeLayer(MAP.L.flow);m.removeLayer(MAP.L.arw)}}
  if(k==='dist')onZoom();
@@ -441,8 +449,33 @@ function openStation(i){const st=BST[i];if(Array.isArray(st[3]))openStretch(st[3
 
 function toast(m){const t=$('#toast');if(!t)return;t.textContent=m;t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),2600)}
 function dockCam(S){const d=$('#camdock');if(!d)return;if(!S||!window.DrainWatch){d.style.display='none';return}
- const dr=S.assets.filter(a=>a.type==='drain').sort((a,b)=>b.q-a.q)[0];const nm=(dr?dr.name+' outfall':'Main outfall')+' · '+S.short;
- d.style.display='';DrainWatch.attach($('#camslot'),{id:'OUTFALL-1',name:nm,ro:S.districts[0]})}
+ const c=S.assets.find(a=>a.type==='cetp')||S.assets.filter(a=>a.type==='stp').sort((a,b)=>b.cap-a.cap)[0];const nm=(c?c.name+' outlet':'Outlet')+' · '+S.short;
+ d.style.display='';DrainWatch.attach($('#camslot'),{id:S.id+'-'+(c?c.id:'OUT'),name:nm,ro:S.districts[0]})}
+
+/* ---------- Urban River Management Plans (URMP) ---------- */
+const URMP=[['Gangotri',30.99,78.94,'Uttarakhand'],['Haldwani-Kathgodam',29.22,79.51,'Uttarakhand'],['Haridwar',29.95,78.16,'Uttarakhand'],['Ramnagar',29.39,79.13,'Uttarakhand'],['Rishikesh',30.09,78.27,'Uttarakhand'],
+ ['Bijnor',29.37,78.13,'Uttar Pradesh'],['Gorakhpur',26.76,83.37,'Uttar Pradesh'],['Mathura-Vrindavan',27.53,77.68,'Uttar Pradesh'],['Mirzapur',25.15,82.57,'Uttar Pradesh'],['Shahjahanpur',27.88,79.91,'Uttar Pradesh'],
+ ['Bhagalpur',25.25,86.98,'Bihar'],['Buxar',25.56,83.98,'Bihar'],['Chhapra',25.78,84.73,'Bihar'],['Gaya',24.79,85.0,'Bihar'],['Munger',25.37,86.47,'Bihar'],
+ ['Adityapur',22.78,86.15,'Jharkhand'],['Chas',23.63,86.17,'Jharkhand'],['Dhanbad',23.8,86.43,'Jharkhand'],['Ranchi',23.34,85.31,'Jharkhand'],['Sahibganj-Rajmahal',25.24,87.64,'Jharkhand'],
+ ['Asansol',23.68,86.98,'West Bengal'],['Durgapur',23.52,87.31,'West Bengal'],['Howrah',22.59,88.31,'West Bengal'],['Nabadwip',23.41,88.37,'West Bengal'],['Siliguri',26.73,88.4,'West Bengal']];
+const AGENDA=[['Floodplain regulation','env'],['Pollution abatement','env'],['Rejuvenation of wetlands and water bodies','env'],['Riparian buffers','env'],['Reuse of treated water','eco'],['Eco-sensitive riverfront development','eco'],['Quality of return flows','env'],['Economic use of river resources','eco'],['River-sensitive master planning','eco'],['Sustained citizen engagement','soc']];
+const PIL={env:'Environmental',eco:'Economic',soc:'Social'};
+function urmpCity(n){return URMP.find(u=>u[0]===n)}
+function urmpForStretch(S){if(!S)return null;const names=[S.short,S.name,...S.assets.map(a=>a.name)].join(' ').toLowerCase();return URMP.find(u=>names.includes(u[0].split('-')[0].toLowerCase()))||null}
+function urmpStation(u){let best=null,bd=1e9;BST.forEach((s,i)=>{const ll=stLL(s[0],s[1]);const d=Math.hypot(ll[0]-u[1],ll[1]-u[2]);if(d<bd){bd=d;best=i}});return bd<.35?best:null}
+function urmpRows(u){const h=[...u[0]].reduce((a,c)=>a+c.charCodeAt(0),0);const r=k=>((Math.sin(h*3.17+k*7.9)+1)/2);const si=urmpStation(u);const sb=si!=null?stationBOD(BST[si]):null;
+ return AGENDA.map(([t,p],k)=>{let st=r(k)>.66?2:r(k)>.28?1:0;let ev='';
+  if(k===1||k===6){if(sb&&sb.b!=null){const c=PCL(sb.b);ev=`Monitoring: BOD ${sb.b.toFixed(1)} mg/L at ${BST[si][2]} (${c[1].toLowerCase()})`;if(c[0]!=='g'&&st===2)st=1}else if(sb)ev=`Monitoring: ${BST[si][2]} station offline`;else ev='No monitoring station on this reach yet'}
+  if(k===4)ev=`Treated water reused: ${Math.round(5+r(20)*30)}% (target 50%)`;if(k===9)ev=`Last citizen event: ${Math.round(1+r(21)*27)} Oct 2026`;
+  return{t,p,st,ev,due:['Mar 2027','Dec 2026','Jun 2027','Sep 2027','Mar 2028','Dec 2027','Mar 2027','Mar 2028','Dec 2027','Ongoing'][k]}})}
+const STL=[['Not started','pr'],['In progress','pa'],['Done','pg']];
+function urmpTable(u){const rows=urmpRows(u);const done=rows.filter(x=>x.st===2).length,prog=rows.filter(x=>x.st===1).length;
+ return `<div class="hint" style="margin-bottom:8px">${esc(u[0])}, ${esc(u[3])} · URMP Phase I · ${done} of 10 done, ${prog} in progress</div><div class="tblwrap"><table><thead><tr><th>#</th><th>Agenda point</th><th>Pillar</th><th>Status</th><th>Evidence from monitoring</th><th>Target</th></tr></thead><tbody>${rows.map((x,i)=>`<tr><td>${i+1}</td><td><b>${esc(x.t)}</b></td><td class="hint">${PIL[x.p]}</td><td><span class="pill ${STL[x.st][1]}">${STL[x.st][0]}</span></td><td class="hint">${esc(x.ev)||'–'}</td><td class="hint">${x.due}</td></tr>`).join('')}</tbody></table></div><div class="src">Points 2 and 7 are checked against station data, not just reported. Statuses are illustrative.</div>`}
+function openUrmp(n){const u=urmpCity(n);if(!u)return;$('#mbox').innerHTML=`<div class="card-h"><h2 style="margin:0">Urban River Management Plan: ${esc(u[0])}</h2><button class="btn sm" onclick="closeModal()">Close</button></div>${urmpTable(u)}`;$('#mbox').style.maxWidth='980px';$('#modal').classList.add('on')}
+function urmpCard(){const by={};URMP.forEach(u=>(by[u[3]]=by[u[3]]||[]).push(u[0]));
+ return `<div class="card mt"><div class="card-h"><h2>Urban River Management Plans</h2><span class="hint">NMCG and NIUA · 60 cities across 5 states · Phase I cities shown · click a city</span></div>
+ <div class="urmpg">${Object.entries(by).map(([st,cs])=>`<div><div class="hint" style="font-weight:700;margin-bottom:5px">${st}</div><div class="tabs">${cs.map(c=>`<button class="chipb" onclick="openUrmp('${c}')">${c}</button>`).join('')}</div></div>`).join('')}</div>
+ <div class="callout mt">Each city's 10-point agenda becomes a tracked list of actions. Pollution abatement and return-flow quality are checked against what the stations and cameras see on the river, not only what the city reports.</div></div>`}
 /* ---------- landing page ---------- */
 function renderHome(){dockCam(null);if(MAP.lm){MAP.lm.remove();MAP.lm=null;MAP.L={}}if(SV.play){clearInterval(SV.play);SV.play=null}SV.id=null;MAP.sel=null;MAP.place=null;
  history.replaceState(null,'',location.pathname);
@@ -499,6 +532,7 @@ function renderBasin(){dockCam(null);
  </div>
  <div class="card mt"><div class="card-h"><h2>Needs attention today</h2><span class="hint">Picked automatically from station, plant and drain data</span></div>
   <div class="alerts">${al.map(a=>`<button class="alert ${a.sev==='a'?'amb':a.sev==='x'?'gry':''}" onclick="openStretch('${a.s}','${a.a}')"><div><b>${esc(a.t)}</b><span>${esc(a.d)}</span></div><span class="go">Open →</span></button>`).join('')}</div></div>
+ ${urmpCard()}
  <div class="card mt"><div class="card-h"><h2>Works on top of what NMCG already runs</h2><span class="hint">No new data entry. This view reads from existing systems and adds checks and follow-up.</span></div>
   <div class="on-top">
    <div class="sys"><b>Real-time water quality stations</b><span>Hourly readings from the CPCB network. Added: checks for missing, stuck and offline sensors.</span></div>
@@ -614,7 +648,7 @@ function renderStretch(keep){
  $('#app').innerHTML=`<div class="crumb"><a onclick="renderHome()">Home</a> <span>›</span> <a onclick="backBasin()">Ganga basin</a> <span>›</span> <a onclick="backBasin('${S.river}')">${RIV[S.river].label}</a> <span>›</span> <b>${esc(S.name)}</b></div>
  <div class="shead"><div><h1>${RIV[S.river].label.replace(' (main stem)','')}: ${esc(S.name)}</h1><p class="sub" style="margin-bottom:6px">Every plant, drain and tributary joining this stretch, the water quality at each station, and where the river goes bad.</p>
  ${S.nmcg?`<span class="pill pr">On NMCG's list of stretches not meeting bathing criteria · June 2026</span>`:S.gen?`<span class="pill px">Town stretch · plants and drains are illustrative</span>`:`<span class="pill pa">Priority stretch</span>`} <span class="pill pb">${S.districts.length} District Ganga Committee${S.districts.length>1?'s':''}: ${S.districts.join(', ')}</span></div>
- <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><button class="btn sm" onclick="document.getElementById('camdock').scrollIntoView({behavior:'smooth'})">Live outfall camera ↓</button><span class="live ${SV.live?'':'paused'}"><i></i>${SV.live?'Live · updated this hour':'Replaying '+tLabel(t)}</span></div></div>
+ <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><button class="btn sm" onclick="document.getElementById('camdock').scrollIntoView({behavior:'smooth'})">Live outlet camera ↓</button><span class="live ${SV.live?'':'paused'}"><i></i>${SV.live?'Live · updated this hour':'Replaying '+tLabel(t)}</span></div></div>
  <div class="kpis mt">
   <div class="kpi"><div class="l">Plants, drains and tributaries</div><div class="v">${S.assets.filter(a=>a.type!=='st').length}</div><div class="c">${[['plant',S.assets.filter(a=>a.type==='stp'||a.type==='cetp').length],['drain',S.assets.filter(a=>a.type==='drain').length],['tributary',S.assets.filter(a=>a.type==='trib').length]].filter(x=>x[1]).map(([w,n])=>n+' '+(n===1?w:(w==='tributary'?'tributaries':w+'s'))).join(' · ')}</div></div>
   <div class="kpi"><div class="l">Plants failing now</div><div class="v" style="color:${sm.failing?'var(--r)':''}">${sm.failing}</div><div class="c">${sm.fails.map(a=>esc(a.name)).join(', ')||'none'}</div></div>
@@ -636,6 +670,7 @@ function renderStretch(keep){
   <div class="card"><div class="card-h"><h2>Sludge at each STP against the proposed KPIs</h2><span class="hint">NMCG notice of 29 May 2026</span></div><div class="tblwrap"><table><thead><tr><th>Plant</th><th>Cake solids<br>(20–30%)</th><th>VS reduction<br>(≥38%)</th><th>Pathogens<br>(&lt;2 M MPN/g)</th><th>Drying</th></tr></thead><tbody>${sludge.map(a=>{const s=a.sl;const ok=(v,good)=>`<span class="pill ${good?'pg':'pr'}">${v}</span>`;return `<tr><td><b>${esc(a.name)}</b><br><span class="hint">${a.cap} MLD</span></td><td>${ok(s[0]+'%',s[0]>=20&&s[0]<=30)}</td><td>${ok(s[1]+'%',s[1]>=38)}</td><td>${ok((s[3]/1e6).toFixed(1)+' M',s[3]<2e6)}</td><td class="hint">${esc(s[2])}</td></tr>`}).join('')}</tbody></table></div><div class="src">Shows which plants would need a solar dryer or process change if the proposed KPIs are adopted in HAM and DBOT contracts.</div></div>
   <div class="card"><div class="card-h"><h2>District Ganga Committee follow-up</h2><span class="hint">Actions linked to this stretch</span></div><table><tbody>${S.dgc.map(([d,a,due,p])=>`<tr><td style="width:55%"><b>${esc(a)}</b><br><span class="hint">${esc(d)} · due ${esc(due)}</span></td><td style="width:30%"><div class="bar"><i style="width:${p}%;background:${p>=50?'#2f8f5b':p>0?'#e69500':'#d7263d'}"></i></div></td><td style="text-align:right">${p}%</td></tr>`).join('')}</tbody></table><div class="src">Read from GDPMS in a full system. Progress figures are illustrative.</div></div>
  </div>
+${(()=>{const u=urmpForStretch(S);return u?`<div class="card mt"><div class="card-h"><h2>Urban River Management Plan: ${esc(u[0])}</h2><span class="hint">10-point agenda, tracked against monitoring data</span></div>${urmpTable(u)}</div>`:''})()}
  <div class="card mt" style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap"><div><b>Stretch status brief</b><div class="hint">A plain-text note for the Executive Director, a District Ganga Committee, or an NGT compliance report.</div></div><button class="btn pri" onclick="brief()">Generate brief</button></div>`;
  document.querySelectorAll('#corr .as').forEach(g=>g.addEventListener('click',()=>selAsset(g.dataset.a)));
  if(!keep)dockCam(S);
@@ -663,7 +698,7 @@ ${S.dgc.map(([d,a,due,p])=>`- ${d}: ${a} (due ${due}, ${p}% done)`).join('\n')}
 
 Concept demonstration. All figures are illustrative.`;
  $('#mbox').innerHTML=`<h2 style="margin-top:0">Stretch status brief</h2><p class="hint">Ready to paste into a note or annex to a report.</p><textarea>${esc(txt)}</textarea><div style="display:flex;gap:8px;margin-top:10px"><button class="btn pri" onclick="navigator.clipboard&&navigator.clipboard.writeText(document.querySelector('#mbox textarea').value);this.textContent='Copied'">Copy</button><button class="btn" onclick="closeModal()">Close</button></div>`;$('#modal').classList.add('on')}
-function closeModal(){$('#modal').classList.remove('on')}
+function closeModal(){$('#modal').classList.remove('on');$('#mbox').style.maxWidth=''}
 addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
 /* deep link: #stretch:kanpur or #river:yamuna */
 (function(){const h=decodeURIComponent(location.hash.slice(1));const[v,a]=h.split(':');if(v==='stretch'&&STRETCHES[a]){SV={id:a,t:RH-1,live:true,sel:null,play:null};renderStretch()}else if(v==='map'||v==='river'){renderBasin();if(v==='river'&&RIV[a])setTimeout(()=>selectRiver(a),300)}else renderHome()})();

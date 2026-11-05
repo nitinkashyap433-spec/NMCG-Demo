@@ -3,7 +3,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0b2a1c">
-<title>Outfall Camera · NMCG concept demo</title>
+<title>Outlet Camera · NMCG concept demo</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;background:#0b1712;color:#e6efe9;font-family:Inter,Segoe UI,system-ui,-apple-system,sans-serif}
@@ -35,7 +35,7 @@ label{font-size:12px;color:#9fb3a8;display:block;margin-bottom:5px}
 </style>
 </head><body>
 <div class="wrap">
-  <div class="top"><img src="images/namami-gange.png" alt="" style="width:auto;border-radius:6px;padding:2px 4px"><div><b>Outfall camera</b><small>Drain outfall · point at the outlet and the water below it</small></div><span class="tag">Concept demo</span></div>
+  <div class="top"><img src="images/namami-gange.png" alt="" style="width:auto;border-radius:6px;padding:2px 4px"><div><b>Outlet camera</b><small>CETP or STP outlet · point at the outlet and the water below it</small></div><span class="tag">Concept demo</span></div>
 
   <div class="vid"><video id="v" playsinline muted autoplay></video><div class="ph" id="ph">Camera is off. Press Start camera.</div><div class="live" id="live">LIVE</div><div class="osd" id="osd"></div></div>
 
@@ -101,7 +101,7 @@ async function openPeer(c,auto){
   const servers=await ice();
   try{peer&&peer.destroy()}catch(e){}
   peer=new Peer(PREFIX+code,Object.assign({debug:1,config:{iceServers:servers}},load('cwSig',{})));
-  peer.on('open',()=>status('wait','Waiting for the control room…','Enter code '+code+' on the Outfall camera panel in the stretch view.'));
+  peer.on('open',()=>status('wait','Waiting for the control room…','Enter code '+code+' on the Outlet camera panel in the stretch view.'));
   peer.on('error',e=>{
     if(e.type==='unavailable-id'){if(auto){openPeer(newCode(),true)}else status('err','Code already in use','Another camera is using this code. Clear the fixed code or choose a different one.');return}
     if(e.type==='network'||e.type==='server-error'||e.type==='socket-error')status('err','Connection problem','Check the internet connection. Retrying…');
@@ -113,7 +113,7 @@ async function openPeer(c,auto){
       if(!stream)return;
       const call=peer.call(conn.peer,stream);calls.push(call);
       status('on','Streaming to the control room','Code '+code+' · keep this page open');
-      call.on('close',()=>{calls=calls.filter(x=>x!==call);if(!calls.length&&stream)status('wait','Waiting for the control room…','Enter code '+code+' on the Outfall camera panel in the stretch view.')});
+      call.on('close',()=>{calls=calls.filter(x=>x!==call);if(!calls.length&&stream)status('wait','Waiting for the control room…','Enter code '+code+' on the Outlet camera panel in the stretch view.')});
     });
   });
 }

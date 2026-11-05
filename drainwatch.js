@@ -15,12 +15,12 @@
     moved: { label: 'Camera moved', desc: 'The camera is no longer pointing at its usual view.', icon: '↻' },
     frozen: { label: 'Feed frozen', desc: 'The picture has stopped changing, as if the feed is stuck or replaced.', icon: '❚❚' },
     lost: { label: 'Feed lost', desc: 'The camera stopped sending video.', icon: '✕' },
-    mismatch: { label: 'Flow from a drain recorded as tapped', desc: 'The camera sees discharge from an outfall that the drain records say is intercepted.', icon: '≠', x: 1 },
-    nodata: { label: 'Discharge seen, station offline', desc: 'The camera sees discharge while the downstream water-quality station sends no data.', icon: '∅', x: 1 },
+    mismatch: { label: 'Discharge seen, effluent sensor reads normal', desc: 'The camera sees heavy or coloured discharge at the outlet while the online effluent sensor reports values well within the limit.', icon: '≠', x: 1 },
+    nodata: { label: 'Discharge seen, effluent sensor offline', desc: 'The camera sees discharge at the outlet while the online effluent sensor sends no data.', icon: '∅', x: 1 },
   };
-  const CHECKS = [['covered', 'Lens view'], ['frozen', 'Live picture'], ['moved', 'Camera position'], ['flame', 'Fire or burning'], ['mismatch', 'Camera vs drain records']];
-  const LIM = 10; // illustrative: records treat a drain as not flowing below this, MLD
-  const DEF = { hold: 5, detAbs: 2.5, detRel: 0.3, dark: 16, frozen: 0.12, moved: 0.75, flame: 0.0015, clear: 3, cooldown: 20, xStd: 5, xSat: 1.01, xGain: 1.5, xPlume: 25, xHold: 10, xLow: 1, xRef: 18 };
+  const CHECKS = [['covered', 'Lens view'], ['frozen', 'Live picture'], ['moved', 'Camera position'], ['flame', 'Fire or burning'], ['mismatch', 'Camera vs effluent sensor']];
+  const LIM = 100; // sensor COD shown as % of the discharge limit (250 mg/L)
+  const DEF = { hold: 5, detAbs: 2.5, detRel: 0.3, dark: 16, frozen: 0.12, moved: 0.75, flame: 0.0015, clear: 3, cooldown: 20, xStd: 5, xSat: 1.01, xGain: 1.5, xPlume: 25, xHold: 10, xLow: 0.6, xRef: 18 };
   const load = (k, d) => { try { const v = JSON.parse(localStorage.getItem(k)); return v == null ? d : v } catch (e) { return d } };
   const save = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)) } catch (e) {} };
   const T = Object.assign({}, DEF, load('nm_cwTune', {}));
@@ -149,16 +149,16 @@
     const el = document.createElement('div');
     el.className = 'card mt cw';
     el.innerHTML = `
-    <div class="card-h"><h2>Outfall camera · live</h2><span class="hint"><span class="cw-uname"></span> · analysed as it streams, nothing is recorded</span></div>
+    <div class="card-h"><h2>Outlet camera · live</h2><span class="hint"><span class="cw-uname"></span> · analysed as it streams, nothing is recorded</span></div>
     <div class="cw-grid">
       <div>
         <div class="cw-vwrap">
           <video playsinline muted autoplay></video>
           <div class="cw-idle">
             <div class="cw-pair">
-              <div class="cw-qr" title="Scan with the phone that will act as the outfall camera"></div>
+              <div class="cw-qr" title="Scan with the phone that will act as the outlet camera"></div>
               <div class="cw-ptxt">
-                <div class="t">Connect the outfall camera</div>
+                <div class="t">Connect the outlet camera</div>
                 <div class="s">Scan this code with the phone camera, open the link, and tap <b>Start camera</b>. The feed appears here on its own.</div>
                 <div class="s cw-pairst"><span class="cw-dot"></span>Waiting for the camera · code <b class="cw-pcode"></b></div>
               </div>
@@ -190,18 +190,18 @@
       </div>
     </div>
     <div class="cw-x" hidden>
-      <div class="cw-xh"><h3>Camera vs drain records</h3><span class="cw-tag y">Drain records are illustrative until live data access</span></div>
+      <div class="cw-xh"><h3>Camera vs online effluent sensor</h3><span class="cw-tag y">Sensor values are illustrative until live data access</span></div>
       <div class="cw-xgrid">
         <div><canvas class="cw-xc"></canvas>
-          <div class="cw-xleg"><span><i style="background:#8a5a2b"></i>Discharge index from camera (0–100)</span><span><i style="background:#0b7a42"></i>Flow in drain records, MLD (illustrative)</span><span><i style="background:#d7263d;height:2px"></i>No-flow line, ${LIM} MLD</span></div></div>
+          <div class="cw-xleg"><span><i style="background:#8a5a2b"></i>Discharge index from camera (0–100)</span><span><i style="background:#0b7a42"></i>Sensor COD, % of limit (illustrative)</span><span><i style="background:#d7263d;height:2px"></i>Discharge limit, COD 250 mg/L</span></div></div>
         <div class="cw-xside">
           <div class="cw-xrow"><span>Discharge index</span><b class="cw-xp">–</b></div>
           <div class="cw-xrow"><span>What the camera sees</span><b class="cw-xpt">–</b></div>
-          <div class="cw-xrow"><span>Flow in drain records</span><b class="cw-xo">–</b></div>
-          <label class="cw-xlab">What the drain records say (illustrative)
-            <select class="cw-xs"><option value="low">Drain tapped, no flow (suspicious)</option><option value="track">Drain flowing (consistent)</option><option value="off">Downstream station sends no data</option></select></label>
+          <div class="cw-xrow"><span>Sensor reading (COD)</span><b class="cw-xo">–</b></div>
+          <label class="cw-xlab">What the online sensor reports (illustrative)
+            <select class="cw-xs"><option value="low">Reads within limit (suspicious)</option><option value="track">Tracks the discharge (consistent)</option><option value="off">Sends no data</option></select></label>
           <div class="cw-xmsg"></div>
-          <div class="cw-foot" style="margin-top:8px"><button class="cw-btn cw-roib">Mark outfall area</button></div>
+          <div class="cw-foot" style="margin-top:8px"><button class="cw-btn cw-roib">Mark outlet area</button></div>
         </div>
       </div>
     </div>`;
@@ -268,7 +268,7 @@
         if (C.stream) return;
         clearInterval(C.pairTimer); C.pairing = false; C.peer = peer; C.pairPeer = null;
         C.kind = 'remote'; C.code = C.pair;
-        start(st2, 'Outfall camera · scanned code ' + C.pair); watchPc(call);
+        start(st2, 'Outlet camera · scanned code ' + C.pair); watchPc(call);
       });
       call.on('close', () => feedLost()); call.on('error', () => feedLost());
     });
@@ -283,7 +283,7 @@
   }
   async function connectRemote(code) {
     code = (code || '').replace(/\s+/g, '').toUpperCase();
-    if (!code) { msg('Enter the code shown on the outfall camera.'); return }
+    if (!code) { msg('Enter the code shown on the outlet camera.'); return }
     save('nm_cwCode', code); stop(false); C.kind = 'remote'; C.code = code; msg('Connecting…');
     try {
       await loadPeer();
@@ -299,7 +299,7 @@
       });
       peer.on('call', call => {
         C.call = call; call.answer();
-        call.on('stream', s => { if (done) return; done = true; clearTimeout(to); start(s, 'Outfall camera · code ' + code); watchPc(call) });
+        call.on('stream', s => { if (done) return; done = true; clearTimeout(to); start(s, 'Outlet camera · code ' + code); watchPc(call) });
         call.on('close', () => feedLost());
         call.on('error', () => feedLost());
       });
@@ -329,7 +329,7 @@
     C.ref = null; C.prev = null; C.st = {}; C.lost = 0; C.muted = 0; C.learnT = performance.now(); C.lastVTat = performance.now(); C.lastVT = -1;
     clearInterval(C.timer); C.timer = setInterval(tick, 200);
     clearInterval(C.osd); C.osd = setInterval(() => { const o = q('.cw-osd'); if (o) o.textContent = `CAM 1 · ${C.unit ? C.unit.id : ''} · ${fmtT(new Date())}` }, 1000);
-    say('Outfall camera connected. Monitoring started.');
+    say('Outlet camera connected. Monitoring started.');
   }
   function feedLost() {
     if (!C.stream || C.lost) return;
@@ -480,18 +480,18 @@
     if (now - (C.xLast || 0) < 1000) return;
     C.xLast = now;
     const t = (now - C.xT0) / 1000, nz = (Math.random() - 0.5) * 2.4;
-    C.oc = C.xs === 'off' ? null : C.xs === 'track' ? Math.max(0, 2 + 0.8 * C.pE + nz) : Math.max(0, 1.2 + 0.6 * Math.sin(t / 17) + nz * 0.25);
+    C.oc = C.xs === 'off' ? null : C.xs === 'track' ? Math.max(8, 22 + 1.3 * C.pE + nz * 2) : Math.max(8, 34 + 4 * Math.sin(t / 17) + nz * 2);
     const flag = !!((C.st.mismatch && C.st.mismatch.open) || (C.st.nodata && C.st.nodata.open));
     C.xh.push({ p: C.pE, o: C.oc, f: flag }); if (C.xh.length > 180) C.xh.shift();
     const set = (c, v) => { const e = q(c); if (e) e.textContent = v };
     set('.cw-xp', healthy ? Math.round(C.pE) + ' / 100' : 'paused');
     set('.cw-xpt', healthy ? (C.pType || (C.pE < 8 ? 'no visible flow' : 'slight flow')) : 'camera check failing');
-    set('.cw-xo', C.oc == null ? 'station offline' : C.oc.toFixed(1) + ' MLD');
+    set('.cw-xo', C.oc == null ? 'sensor offline' : Math.round(C.oc * 2.5) + ' mg/L · ' + Math.round(C.oc) + '% of limit');
     const msgEl = q('.cw-xmsg');
     if (msgEl) {
-      const rule = `Rule: discharge index ${T.xPlume}+ for ${T.xHold} s while the drain records show under ${LIM} MLD, or the station sends no data. In production the hold would be about 10 minutes.`;
+      const rule = `Rule: discharge index ${T.xPlume}+ for ${T.xHold} s while the online sensor reads under ${Math.round(T.xLow * 100)}% of the limit, or sends no data. In production the hold would be about 10 minutes.`;
       const sm = C.st.mismatch || {}, sn = C.st.nodata || {};
-      msgEl.innerHTML = (sm.open || sn.open) ? `<b>${TYPES[sm.open ? 'mismatch' : 'nodata'].label}.</b> The camera and the drain records disagree. ${rule}` : (sm.since || sn.since) ? `<b style="color:#8a5200">Checking:</b> the camera sees flow but the records say there should be none. ${rule}` : rule;
+      msgEl.innerHTML = (sm.open || sn.open) ? `<b>${TYPES[sm.open ? 'mismatch' : 'nodata'].label}.</b> The camera and the effluent sensor disagree. ${rule}` : (sm.since || sn.since) ? `<b style="color:#8a5200">Checking:</b> the camera sees discharge but the sensor does not reflect it. ${rule}` : rule;
     }
     drawChart();
     drawRoi();
@@ -526,13 +526,13 @@
     const vr = vidRect();
     const bx = vr.x + roi.x * vr.w, by = vr.y + roi.y * vr.h, bw = roi.w * vr.w, bh = roi.h * vr.h;
     x.strokeStyle = '#ffd400'; x.lineWidth = 2; x.setLineDash([7, 5]); x.strokeRect(bx, by, bw, bh); x.setLineDash([]);
-    x.font = '600 11px Inter,system-ui,sans-serif'; const lab = roi.def ? 'Outfall area (default)' : 'Outfall area';
+    x.font = '600 11px Inter,system-ui,sans-serif'; const lab = roi.def ? 'Outlet area (default)' : 'Outlet area';
     const tw = x.measureText(lab).width + 10; x.fillStyle = '#ffd400'; x.fillRect(bx, Math.max(0, by - 18), tw, 18); x.fillStyle = '#1c2a23'; x.fillText(lab, bx + 5, Math.max(0, by - 18) + 13);
   }
   function roiMode(on) {
     const c = q('.cw-roic'); if (!c) return;
     c.classList.toggle('draw', on); C.roiDraw = on;
-    if (on) say('Drag a box over the drain outfall and the water just below it');
+    if (on) say('Drag a box over the outlet pipe and the water just below it');
   }
   function roiWire() {
     const c = q('.cw-roic'); let st = null;
@@ -540,7 +540,7 @@
     c.addEventListener('pointerdown', e => { if (!C.roiDraw) return; st = pt(e); c.setPointerCapture(e.pointerId); e.preventDefault() });
     c.addEventListener('pointermove', e => { if (!st) return; const p = pt(e); drawRoi({ x: Math.min(st.x, p.x), y: Math.min(st.y, p.y), w: Math.abs(p.x - st.x), h: Math.abs(p.y - st.y) }) });
     c.addEventListener('pointerup', e => { if (!st) return; const p = pt(e); const roi = { x: Math.min(st.x, p.x), y: Math.min(st.y, p.y), w: Math.abs(p.x - st.x), h: Math.abs(p.y - st.y) }; st = null; roiMode(false);
-      if (roi.w > 0.03 && roi.h > 0.03) { C.roi = roi; save('nm_cwRoi', roi); C.rbuf = []; C.rref = null; C.rrefWant = true; say('Outfall area saved. Its current look is taken as the no-flow view.') } drawRoi() });
+      if (roi.w > 0.03 && roi.h > 0.03) { C.roi = roi; save('nm_cwRoi', roi); C.rbuf = []; C.rref = null; C.rrefWant = true; say('Outlet area saved. Its current look is taken as the normal view.') } drawRoi() });
   }
 
   /* ---------- incidents ---------- */
@@ -556,11 +556,11 @@
   function raise(k, s, now) {
     const t = TYPES[k], d = new Date();
     let desc = t.desc;
-    if (k === 'mismatch') desc = `Discharge (index ${Math.round(C.pE)} of 100, ${C.pType || 'flow'}) has been visible at the outfall for ${T.xHold} seconds while the drain records show ${C.oc.toFixed(1)} MLD, meaning the drain should be intercepted. Drain records in this demo are illustrative.`;
-    if (k === 'nodata') desc = `Discharge (index ${Math.round(C.pE)} of 100) has been visible for ${T.xHold} seconds while the downstream station is sending no data.`;
+    if (k === 'mismatch') desc = `Discharge (index ${Math.round(C.pE)} of 100, ${C.pType || 'flow'}) has been visible at the outlet for ${T.xHold} seconds while the online sensor reports COD ${Math.round(C.oc * 2.5)} mg/L, ${Math.round(C.oc)}% of the limit. Sensor values in this demo are illustrative.`;
+    if (k === 'nodata') desc = `Discharge (index ${Math.round(C.pE)} of 100) has been visible at the outlet for ${T.xHold} seconds while the online effluent sensor is sending no data.`;
     const inc = { id: 'cw' + Date.now(), k, label: t.label, desc, at: d, held: TYPES[k].x ? T.xHold : T.hold, img: k === 'lost' ? '' : snapshot(), mail: C.email ? 'sending' : 'off', ack: false, cleared: null };
     s.open = inc; C.inc.unshift(inc); C.inc = C.inc.slice(0, 12);
-    chime(); drawInc(); say(`${t.label} at ${C.unit ? C.unit.name : 'outfall camera'}. Alert raised.`);
+    chime(); drawInc(); say(`${t.label} at ${C.unit ? C.unit.name : 'outlet camera'}. Alert raised.`);
     publish(inc);
     if (C.email) sendMail(inc);
   }
@@ -608,7 +608,7 @@
       <tr><td>Flame-coloured share</td><td><b data-m="flame"></b></td><td>Flame if extra share above</td><td><input data-t="flame" type="number" step="0.0005"></td></tr>
       <tr><td colspan="2">Hold time and repeat gap (seconds)</td><td>Hold / cooldown</td><td><input data-t="hold" type="number" step="1"> <input data-t="cooldown" type="number" step="1"></td></tr>
       <tr><td>Discharge: movement / colour limit</td><td><b data-m="pidx"></b></td><td>Moving if change above / grey if colour below</td><td><input data-t="xStd" type="number" step="0.5"> <input data-t="xSat" type="number" step="0.05"></td></tr>
-      <tr><td colspan="2">Cross-check: discharge index and seconds to flag</td><td>Index / seconds / share of no-flow line</td><td><input data-t="xPlume" type="number" step="1"> <input data-t="xHold" type="number" step="1"> <input data-t="xLow" type="number" step="0.05"></td></tr>
+      <tr><td colspan="2">Cross-check: discharge index and seconds to flag</td><td>Index / seconds / sensor share of limit</td><td><input data-t="xPlume" type="number" step="1"> <input data-t="xHold" type="number" step="1"> <input data-t="xLow" type="number" step="0.05"></td></tr>
       </tbody></table><div class="cw-foot"><button class="cw-btn cw-tdef">Restore defaults</button><button class="cw-btn cw-tclr">Clear alert history</button></div>`;
     q('.cw-tune').querySelectorAll('[data-t]').forEach(inp => { inp.value = T[inp.dataset.t]; inp.onchange = () => { const v = parseFloat(inp.value); if (!isNaN(v)) { T[inp.dataset.t] = v; save('nm_cwTune', pick()) } } });
     q('.cw-tdef').onclick = () => { Object.assign(T, DEF); save('nm_cwTune', {}); tuneUI() };
@@ -636,7 +636,7 @@
       if (!C.el) build(unit);
       C.unit = unit;
       { const un = C.el.querySelector('.cw-uname'); if (un) un.textContent = unit ? unit.name : ''; }
-      slot.appendChild(C.el);
+      if (C.el.parentNode !== slot) { slot.innerHTML = ''; slot.appendChild(C.el) }
       const v = q('video'); if (v && v.srcObject) v.play().catch(() => {});
     },
     stop: () => stop(true),
