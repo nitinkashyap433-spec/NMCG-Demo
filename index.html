@@ -5,6 +5,7 @@
 <title>Ganga River Intelligence · NMCG concept demo</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="drainwatch.js"></script>
 <style>
 :root{--blue:#0a6fb8;--blue2:#0d5a93;--sky:#e8f2fa;--org:#f39c1a;--ink:#14232c;--mut:#62737d;--line:#e2e9ee;--bg:#f4f7f9;--card:#fff;
 --g:#2f8f5b;--a:#e69500;--r:#d7263d;--gr:#8f9ca5}
@@ -131,12 +132,16 @@ tr:last-child td{border-bottom:0}
 .herofacts{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:26px}
 .herofacts span{background:rgba(255,255,255,.85);border:1px solid #d7e8f5;border-radius:20px;padding:6px 13px;font-size:13px;color:#40525d}
 .herofacts b{color:#0d3f68}
-.entries{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:16px}
+.entries{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:16px}
 .entry{display:flex;flex-direction:column;align-items:flex-start;gap:8px;text-align:left;background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px;transition:transform .15s,box-shadow .15s}
 .entry:hover{transform:translateY(-2px);box-shadow:0 12px 28px rgba(16,60,90,.10);border-color:#b9d7ee}
 .entry b{font-size:15.5px}.entry span{font-size:13.5px;color:var(--mut);line-height:1.45}.entry i{font-style:normal;color:var(--blue);font-weight:700;font-size:13px;margin-top:auto}
 .eic{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;font-size:19px;font-weight:700}
+@media (max-width:1100px){.entries{grid-template-columns:1fr 1fr}}
 @media (max-width:800px){.entries{grid-template-columns:1fr}.herot{font-size:30px}.herologo{height:70px}.heros{font-size:15.5px}.hero{min-height:0}}
+#camdock{max-width:1440px;margin:0 auto;padding:0 20px 24px}
+#toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:#10202a;color:#fff;border-radius:10px;padding:10px 16px;font-size:13.5px;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90vw;text-align:center;z-index:70}
+#toast.show{opacity:1}
 .foot{max-width:1440px;margin:0 auto;padding:0 20px 28px;font-size:12px;color:var(--mut)}
 @media (max-width:1100px){.gmap{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(3,1fr)}.on-top{grid-template-columns:1fr 1fr}.det{grid-template-columns:1fr 1fr}}
 @media (max-width:700px){#map{height:470px}.wpanel{position:static;width:auto;max-width:none;border-radius:0;border-width:1px 0 0}.basebar{top:auto;bottom:60px}.kpis{grid-template-columns:1fr 1fr}.g2{grid-template-columns:1fr}.top img{height:36px}.ttl b{font-size:15px}.ttl span{display:none}.tag{font-size:11px;padding:4px 8px}.clock{display:none}main{padding:12px}h1{font-size:20px}.legend{display:none}.on-top{grid-template-columns:1fr}.tblwrap{overflow-x:auto}.tblwrap table{min-width:560px}}
@@ -149,6 +154,8 @@ tr:last-child td{border-bottom:0}
  <span class="clock" id="clock"></span>
 </div></div>
 <main id="app"></main>
+<section id="camdock" style="display:none"><div class="card-h" style="margin-bottom:0"><h2 style="font-size:18px">Live camera at the outfall</h2><span class="hint">A phone can act as the camera for this demo. In a full system, these would be fixed cameras at major drain outfalls and STP outlets.</span></div><div id="camslot"></div></section>
+<div id="toast"></div>
 <div class="foot">Concept demonstration prepared for discussion. Not an official NMCG system. River courses and state outlines are approximate and not to scale. All station readings, plants, drains, flows and statuses are illustrative.</div>
 <div class="tip" id="tip"></div>
 <div class="modal" id="modal" onclick="if(event.target===this)closeModal()"><div class="box" id="mbox"></div></div>
@@ -432,8 +439,12 @@ function genStretch(i){const id='g'+i;if(STRETCHES[id])return id;const st=BST[i]
  return id}
 function openStation(i){const st=BST[i];if(Array.isArray(st[3]))openStretch(st[3][0],st[3][1]);else openStretch(genStretch(i),'ST2')}
 
+function toast(m){const t=$('#toast');if(!t)return;t.textContent=m;t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),2600)}
+function dockCam(S){const d=$('#camdock');if(!d)return;if(!S||!window.DrainWatch){d.style.display='none';return}
+ const dr=S.assets.filter(a=>a.type==='drain').sort((a,b)=>b.q-a.q)[0];const nm=(dr?dr.name+' outfall':'Main outfall')+' · '+S.short;
+ d.style.display='';DrainWatch.attach($('#camslot'),{id:'OUTFALL-1',name:nm,ro:S.districts[0]})}
 /* ---------- landing page ---------- */
-function renderHome(){if(MAP.lm){MAP.lm.remove();MAP.lm=null;MAP.L={}}if(SV.play){clearInterval(SV.play);SV.play=null}SV.id=null;MAP.sel=null;MAP.place=null;
+function renderHome(){dockCam(null);if(MAP.lm){MAP.lm.remove();MAP.lm=null;MAP.L={}}if(SV.play){clearInterval(SV.play);SV.play=null}SV.id=null;MAP.sel=null;MAP.place=null;
  history.replaceState(null,'',location.pathname);
  $('#app').innerHTML=`<section class="hero">
   <svg class="herobg" viewBox="0 0 1400 420" preserveAspectRatio="none" aria-hidden="true"><path d="M-20,300 C180,210 320,360 520,280 S860,140 1040,230 S1300,330 1420,240" fill="none" stroke="#cfe4f3" stroke-width="46" stroke-linecap="round"/><path d="M-20,300 C180,210 320,360 520,280 S860,140 1040,230 S1300,330 1420,240" fill="none" stroke="#7fb5de" stroke-width="10" stroke-linecap="round" opacity=".55"/><path class="lflow" d="M-20,300 C180,210 320,360 520,280 S860,140 1040,230 S1300,330 1420,240" fill="none" stroke="#fff" stroke-width="3" stroke-dasharray="6 22" stroke-linecap="round"/></svg>
@@ -467,7 +478,7 @@ function alerts(){const out=[];const t=RH-1;
 
 /* ---------- basin view ---------- */
 function renderCrumb(){const c=$('#crumb');if(!c)return;const P=MAP.place;c.innerHTML=`<a onclick="renderHome()">Home</a> <span>›</span> <a onclick="resetMap()">Ganga basin</a>${MAP.sel?` <span>›</span> <b>${RIV[MAP.sel].label}</b>`:''}${P?` <span class="where">You are looking at: <b>${esc(P.d)}</b>, ${esc(P.s)} · ${DCAT[P.c][0]}</span>`:''}`}
-function renderBasin(){
+function renderBasin(){dockCam(null);
  MAP.sel=null;MAP.place=null;if(MAP.lm){MAP.lm.remove();MAP.lm=null;MAP.L={}}MAP.water=null;
  const all=BST.map(stationBOD);const rep=all.filter(s=>!s.off).length;const fl=all.filter(s=>s.flat).length;
  let untreated=0,fail=0,plants=0;Object.values(STRETCHES).filter(S=>!S.gen).forEach(S=>{const sm=stretchSummary(S,RH-1);untreated+=sm.untreated;fail+=sm.failing;plants+=S.assets.filter(a=>a.type==='stp'||a.type==='cetp').length});
@@ -603,7 +614,7 @@ function renderStretch(keep){
  $('#app').innerHTML=`<div class="crumb"><a onclick="renderHome()">Home</a> <span>›</span> <a onclick="backBasin()">Ganga basin</a> <span>›</span> <a onclick="backBasin('${S.river}')">${RIV[S.river].label}</a> <span>›</span> <b>${esc(S.name)}</b></div>
  <div class="shead"><div><h1>${RIV[S.river].label.replace(' (main stem)','')}: ${esc(S.name)}</h1><p class="sub" style="margin-bottom:6px">Every plant, drain and tributary joining this stretch, the water quality at each station, and where the river goes bad.</p>
  ${S.nmcg?`<span class="pill pr">On NMCG's list of stretches not meeting bathing criteria · June 2026</span>`:S.gen?`<span class="pill px">Town stretch · plants and drains are illustrative</span>`:`<span class="pill pa">Priority stretch</span>`} <span class="pill pb">${S.districts.length} District Ganga Committee${S.districts.length>1?'s':''}: ${S.districts.join(', ')}</span></div>
- <span class="live ${SV.live?'':'paused'}"><i></i>${SV.live?'Live · updated this hour':'Replaying '+tLabel(t)}</span></div>
+ <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><button class="btn sm" onclick="document.getElementById('camdock').scrollIntoView({behavior:'smooth'})">Live outfall camera ↓</button><span class="live ${SV.live?'':'paused'}"><i></i>${SV.live?'Live · updated this hour':'Replaying '+tLabel(t)}</span></div></div>
  <div class="kpis mt">
   <div class="kpi"><div class="l">Plants, drains and tributaries</div><div class="v">${S.assets.filter(a=>a.type!=='st').length}</div><div class="c">${[['plant',S.assets.filter(a=>a.type==='stp'||a.type==='cetp').length],['drain',S.assets.filter(a=>a.type==='drain').length],['tributary',S.assets.filter(a=>a.type==='trib').length]].filter(x=>x[1]).map(([w,n])=>n+' '+(n===1?w:(w==='tributary'?'tributaries':w+'s'))).join(' · ')}</div></div>
   <div class="kpi"><div class="l">Plants failing now</div><div class="v" style="color:${sm.failing?'var(--r)':''}">${sm.failing}</div><div class="c">${sm.fails.map(a=>esc(a.name)).join(', ')||'none'}</div></div>
@@ -627,6 +638,7 @@ function renderStretch(keep){
  </div>
  <div class="card mt" style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap"><div><b>Stretch status brief</b><div class="hint">A plain-text note for the Executive Director, a District Ganga Committee, or an NGT compliance report.</div></div><button class="btn pri" onclick="brief()">Generate brief</button></div>`;
  document.querySelectorAll('#corr .as').forEach(g=>g.addEventListener('click',()=>selAsset(g.dataset.a)));
+ if(!keep)dockCam(S);
  if(keep)scrollTo(0,scroll)}
 function selAsset(id){SV.sel=SV.sel===id?null:id;renderStretch(true);const d=$('#detail');if(d&&SV.sel){const r=d.getBoundingClientRect();if(r.top>innerHeight*.6||r.top<0)d.scrollIntoView({behavior:'smooth',block:'center'})}}
 function setT(v){SV.t=+v;SV.live=SV.t===RH-1;renderStretch(true)}
